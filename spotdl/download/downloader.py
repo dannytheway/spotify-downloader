@@ -481,8 +481,12 @@ class Downloader:
                 return song, None
             else:
                 if not dp.exists():
-                    dp.mkdir(parents=True, exist_ok=True)
-                    output_file = dp / output_file.name
+                    if self.settings["allow_create_dirs"]:
+                        dp.mkdir(parents=True, exist_ok=True)
+                        output_file = dp / output_file.name
+                    else:
+                        logger.error("Output directory %s does not exist and allow_create_dirs is false", dp)
+                        return song, None
 
 
         logger.info("Using custom dir for output: %s", output_file.parent)

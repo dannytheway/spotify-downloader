@@ -365,6 +365,7 @@ DOWNLOADER_OPTIONS: DownloaderOptions = {
     "create_skip_file": False,
     "respect_skip_file": False,
     "sync_remove_lrc": False,
+    "allow_create_dirs": True
 }
 
 WEB_OPTIONS: WebOptions = {
