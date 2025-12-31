@@ -378,6 +378,7 @@ def query_search(query: str) -> List[Song]:
 @router.post("/api/download/url")
 async def download_url(
     url: str,
+    download_path: Optional[str] = Query(default=None),
     client: Client = Depends(get_client),
     state: ApplicationState = Depends(get_current_state),
 ) -> Optional[str]:
@@ -408,7 +409,7 @@ async def download_url(
         song = Song.from_url(url)
 
         # Download Song
-        _, path = await client.downloader.pool_download(song)
+        _, path = await client.downloader.pool_download(song, download_path)
 
         if path is None:
             state.logger.error(f"Failure downloading {song.name}")
