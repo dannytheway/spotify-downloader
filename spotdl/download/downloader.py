@@ -474,8 +474,18 @@ class Downloader:
             file_name_length=self.settings["max_filename_length"],
         )
 
-        if download_path is not None and download_path is str and download_path != "":
-            output_file = Path(download_path) / output_file.name
+        if download_path:
+            dp = Path(download_path)
+            if dp.suffix:
+                logger.error("Output path %s is a file, but a directory was expected.", dp)
+                return song, None
+            else:
+                if not dp.exists():
+                    dp.mkdir(parents=True, exist_ok=True)
+                    output_file = dp / output_file.name
+
+
+        logger.info("Using custom dir for output: %s", output_file.parent)
 
         if song.explicit is True and self.settings["skip_explicit"] is True:
             logger.info("Skipping explicit song: %s", song.display_name)
@@ -785,6 +795,7 @@ class Downloader:
                 )
 
             download_info["filepath"] = str(output_file)
+            logger.debug("Download info: %s", download_info)
 
             # Set the song's download url
             if song.download_url is None:
