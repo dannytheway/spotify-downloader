@@ -355,7 +355,7 @@ class Downloader:
 
         return results
 
-    async def pool_download(self, song: Song) -> Tuple[Song, Optional[Path]]:
+    async def pool_download(self, song: Song, download_path = None) -> Tuple[Song, Optional[Path]]:
         """
         Run asynchronous task in a pool to make sure that all processes.
 
@@ -372,7 +372,7 @@ class Downloader:
         # tasks that cannot acquire semaphore will wait here until it's free
         # only certain amount of tasks can acquire the semaphore at the same time
         async with self.semaphore:
-            return await self.loop.run_in_executor(None, self.search_and_download, song)
+            return await self.loop.run_in_executor(None, self.search_and_download, song, download_path)
 
     def search(self, song: Song) -> str:
         """
@@ -423,7 +423,7 @@ class Downloader:
         return None
 
     def search_and_download(  # pylint: disable=R0911
-        self, song: Song
+        self, song: Song, download_path = None
     ) -> Tuple[Song, Optional[Path]]:
         """
         Search for the song and download it.
@@ -473,6 +473,23 @@ class Downloader:
             restrict=self.settings["restrict"],
             file_name_length=self.settings["max_filename_length"],
         )
+
+        if download_path:
+            dp = Path(download_path)
+            if dp.suffix:
+                logger.error("Output path %s is a file, but a directory was expected.", dp)
+                return song, None
+            else:
+                if not dp.exists():
+                    if self.settings["allow_create_dirs"]:
+                        dp.mkdir(parents=True, exist_ok=True)
+                        output_file = dp / output_file.name
+                    else:
+                        logger.error("Output directory %s does not exist and allow_create_dirs is false", dp)
+                        return song, None
+
+
+        logger.info("Using custom dir for output: %s", output_file.parent)
 
         if song.explicit is True and self.settings["skip_explicit"] is True:
             logger.info("Skipping explicit song: %s", song.display_name)
@@ -782,6 +799,7 @@ class Downloader:
                 )
 
             download_info["filepath"] = str(output_file)
+            logger.debug("Download info: %s", download_info)
 
             # Set the song's download url
             if song.download_url is None:
